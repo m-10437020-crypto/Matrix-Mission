@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrix Mission — BIG Pipe Plants Fix</title>
+
+<style>
+*{box-sizing:border-box}
+html,body{
+  margin:0;
+  height:100%;
+  background:#111;
+  font-family:Arial,sans-serif;
+}
+body{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+
+#game{
+  position:relative;
+  width:1000px;
+  height:560px;
+  overflow:hidden;
+  background:#4da3ff;
+}
+
+#bg{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:1;
+}
+
+/* BIGGER MOVING CLOUDS */
+.cloud{
+  position:absolute;
+  z-index:4;
+  pointer-events:none;
+  user-select:none;
+  -webkit-user-drag:none;
+}
+
+.cloud.one{
+  width:310px;
+  top:28px;
+  left:105%;
+  animation:cloudA 18s linear infinite;
+}
+
+.cloud.two{
+  width:250px;
+  top:95px;
+  left:115%;
+  animation:cloudB 25s linear infinite;
+  animation-delay:-11s;
+}
+
+@keyframes cloudA{
+  from{transform:translateX(0)}
+  to{transform:translateX(-1450px)}
+}
+
+@keyframes cloudB{
+  from{transform:translateX(0)}
+  to{transform:translateX(-1500px)}
+}
+
+/* MARIO */
+#mario{
+  position:absolute;
+  width:125px;
+  left:50px;
+  bottom:54px;
+  z-index:20;
+  user-select:none;
+  -webkit-user-drag:none;
+}
+
+/* ENEMIES */
+#ghost{
+  position:absolute;
+  width:108px;
+  display:none;
+  z-index:15;
+}
+
+#mushroom{
+  position:absolute;
+  width:112px;
+  display:none;
+  z-index:15;
+}
+
+#coin{
+  position:absolute;
+  width:72px;
+  display:none;
+  z-index:16;
+}
+
+/* TWO PLANT WINDOWS — ONLY THE AREA ABOVE EACH PIPE OPENING IS VISIBLE */
+.plantWindow{
+  position:absolute;
+  display:none;
+  width:290px;
+  height:300px;
+  overflow:hidden;
+  z-index:14;
+  pointer-events:none;
+}
+
+/* Match the centers of the two pipes in level2.png */
+#plantWindow1{
+  left:110px;
+  bottom:165px;   /* exactly at the top/opening of the left pipe */
+}
+
+#plantWindow2{
+  left:590px;
+  bottom:165px;   /* exactly at the top/opening of the right pipe */
+}
+
+/* MUCH BIGGER PLANTS */
+.plant{
+  position:absolute;
+  width:270px;
+  left:10px;
+  bottom:-270px;  /* fully hidden BELOW the pipe opening */
+  user-select:none;
+  -webkit-user-drag:none;
+}
+/* HUD */
+#hud{
+  position:absolute;
+  top:18px;
+  right:24px;
+  z-index:40;
+  font-size:34px;
+}
+
+#levelLabel{
+  position:absolute;
+  top:18px;
+  left:24px;
+  z-index:40;
+  background:rgba(255,255,255,.92);
+  padding:9px 16px;
+  border-radius:14px;
+  font-size:20px;
+  font-weight:900;
+}
+
+#help{
+  position:absolute;
+  bottom:10px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:40;
+  background:rgba(255,255,255,.92);
+  padding:8px 14px;
+  border-radius:12px;
+  font-weight:800;
+}
+
+#clearBanner{
+  display:none;
+  position:absolute;
+  top:72px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:45;
+  background:#ffd42a;
+  color:#111;
+  border:4px solid white;
+  border-radius:13px;
+  padding:10px 20px;
+  font-size:20px;
+  font-weight:900;
+}
+
+/* OVERLAYS */
+.overlay{
+  position:absolute;
+  inset:0;
+  z-index:70;
+  background:rgba(0,0,0,.80);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  color:#fff;
+  padding:30px;
+}
+
+.overlay h1{
+  font-size:52px;
+  margin:0 0 12px;
+  text-shadow:4px 4px #d22;
+}
+
+.bigbtn{
+  padding:14px 34px;
+  border:5px solid #fff;
+  border-radius:15px;
+  background:#ffd42a;
+  font-size:24px;
+  font-weight:900;
+  cursor:pointer;
+}
+
+/* QUESTION */
+#question{
+  display:none;
+  position:absolute;
+  z-index:85;
+  left:155px;
+  top:70px;
+  width:690px;
+  background:#fff;
+  color:#222;
+  border:6px solid #222;
+  border-radius:20px;
+  text-align:center;
+  padding:25px;
+}
+
+#qText{
+  font-family:monospace;
+  font-size:24px;
+  line-height:1.55;
+}
+
+.answers button{
+  margin:8px;
+  padding:12px 20px;
+  background:#ffd42a;
+  border:4px solid #222;
+  border-radius:10px;
+  font-size:18px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+#feedback{
+  min-height:28px;
+  font-weight:900;
+  font-size:20px;
+}
+
+#transition{
+  position:absolute;
+  inset:0;
+  z-index:100;
+  background:#000;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .45s ease;
+}
+
+#gameOver,#winScreen{display:none}
+
+#climbGuide{
+  position:absolute;
+  left:50%;
+  bottom: 105px;
+  transform:translateX(-50%);
+  z-index:30;
+  background:rgba(255,255,255,.94);
+  border:4px solid #222;
+  border-radius:18px;
+  padding:10px 18px;
+  font-family:Arial,sans-serif;
+  font-weight:900;
+  font-size:17px;
+  text-align:center;
+  line-height:1.35;
+  box-shadow:0 6px 0 rgba(0,0,0,.25);
+  display:none;
+  pointer-events:none;
+  transition:opacity .5s ease;
+}
+#climbGuide .guideTitle{
+  font-size:19px;
+  margin-bottom:2px;
+}
+
+</style>
+</head>
+
+<body>
+<div id="game">
+
+  <img id="bg" src="level1.png" alt="">
+
+  <img class="cloud one" src="cloud1.png" alt="">
+  <img class="cloud two" src="cloud2.png" alt="">
+
+  <img id="mario" src="mario.png" alt="Mario">
+  <img id="ghost" src="ghost.png" alt="">
+  <img id="mushroom" src="mushroom.png" alt="">
+  <img id="coin" src="coin.png" alt="Coin">
+
+  <!-- TWO SEPARATE PLANTS -->
+  <div id="plantWindow1" class="plantWindow">
+    <img id="plant1" class="plant" src="plant.png" alt="">
+  </div>
+
+  <div id="plantWindow2" class="plantWindow">
+    <img id="plant2" class="plant" src="plant.png" alt="">
+  </div>
+
+  <div id="levelLabel">LEVEL 1</div>
+  <div id="hud">❤️❤️❤️</div>
+  <div id="help">← → move &nbsp; | &nbsp; ↑ / SPACE jump</div>
+  <div id="clearBanner">LEVEL CLEARED — WALK →</div>
+
+  <div id="startScreen" class="overlay">
+    <h1>MATRIX MISSION</h1>
+    <p>Collect each coin and solve the matrix challenge.</p>
+    <button id="startBtn" class="bigbtn">START GAME</button>
+  </div>
+
+  <div id="question">
+    <h2>🪙 MATRIX CHALLENGE 🪙</h2>
+    <div id="qText"></div>
+    <div class="answers" id="answers"></div>
+    <div id="feedback"></div>
+  </div>
+
+  <div id="gameOver" class="overlay">
+    <h1>GAME OVER</h1>
+    <p>You ran out of hearts.</p>
+    <button class="bigbtn" onclick="location.reload()">TRY AGAIN</button>
+  </div>
+
+  <div id="winScreen" class="overlay">
+    <h1>🪙 MISSION COMPLETE! 🪙</h1>
+    <p>You cleared all 3 levels!</p>
+  </div>
+
+  <div id="transition"></div>
+</div>
+
+<script>
+const game=document.getElementById('game');
+const bg=document.getElementById('bg');
+const mario=document.getElementById('mario');
+const ghost=document.getElementById('ghost');
+const mushroom=document.getElementById('mushroom');
+const coin=document.getElementById('coin');
+
+const plantWindow1=document.getElementById('plantWindow1');
+const plantWindow2=document.getElementById('plantWindow2');
+const plant1=document.getElementById('plant1');
+const plant2=document.getElementById('plant2');
+
+const hud=document.getElementById('hud');
+const levelLabel=document.getElementById('levelLabel');
+const clearBanner=document.getElementById('clearBanner');
+const question=document.getElementById('question');
+const qText=document.getElementById('qText');
+const answers=document.getElementById('answers');
+const feedback=document.getElementById('feedback');
+const transition=document.getElementById('transition');
+
+const GROUND=54;
+
+const ROCK_X1=382;
+const ROCK_X2=790;
+const ROCK_TOP_BOTTOM=252;
+
+let x=50;
+let yBottom=GROUND;
+let prevBottom=GROUND;
+let vy=0;
+let jumping=false;
+let standingOnRock=false;
+let climbing=false;
+let up=false;
+let down=false;
+
+let left=false;
+let right=false;
+let started=false;
+let paused=false;
+let levelCleared=false;
+let changingLevel=false;
+
+let hearts=3;
+let level=1;
+let invincible=false;
+
+let ghostX=255;
+let ghostDir=1;
+
+let mushroomX=405;
+let mushroomDir=1;
+
+let coinCollected=false;
+
+const questions=[
+  {
+    q:`[ 2  1 ] + [ 1  2 ]<br>[ 3  4 ] &nbsp;&nbsp;[ 2  1 ]`,
+    choices:[
+      `[ 3  3 ]<br>[ 5  5 ]`,
+      `[ 2  3 ]<br>[ 5  4 ]`,
+      `[ 3  2 ]<br>[ 4  5 ]`
+    ],
+    correct:0
+  },
+  {
+    q:`[ 5  2 ] - [ 1  1 ]<br>[ 4  3 ] &nbsp;&nbsp;[ 2  1 ]`,
+    choices:[
+      `[ 4  1 ]<br>[ 2  2 ]`,
+      `[ 6  3 ]<br>[ 6  4 ]`,
+      `[ 4  3 ]<br>[ 2  2 ]`
+    ],
+    correct:0
+  },
+  {
+    q:`2 × [ 1  3 ]<br>&nbsp;&nbsp;&nbsp;&nbsp;[ 2  4 ]`,
+    choices:[
+      `[ 2  6 ]<br>[ 4  8 ]`,
+      `[ 3  5 ]<br>[ 4  6 ]`,
+      `[ 2  3 ]<br>[ 2  4 ]`
+    ],
+    correct:0
+  }
+];
+
+function setHearts(){
+  hud.textContent='❤️'.repeat(hearts)+'🖤'.repeat(3-hearts);
+}
+
+function resetMario(){
+  x=50;
+  yBottom=GROUND;
+  prevBottom=GROUND;
+  vy=0;
+  jumping=false;
+  standingOnRock=false;
+  climbing=false;
+  up=false;
+  down=false;
+  mario.style.left=x+'px';
+  mario.style.bottom=yBottom+'px';
+}
+
+
+let climbGuideTimer=null;
+
+function showLevel2ClimbGuide(){
+  const guide=document.getElementById('climbGuide');
+  if(!guide) return;
+
+  if(climbGuideTimer) clearTimeout(climbGuideTimer);
+
+  guide.style.display='block';
+  guide.style.opacity='1';
+
+  climbGuideTimer=setTimeout(()=>{
+    guide.style.opacity='0';
+    setTimeout(()=>{
+      guide.style.display='none';
+      guide.style.opacity='1';
+    },500);
+  },6500);
+}
+
+function hideClimbGuide(){
+  const guide=document.getElementById('climbGuide');
+  if(!guide) return;
+  if(climbGuideTimer) clearTimeout(climbGuideTimer);
+  guide.style.display='none';
+  guide.style.opacity='1';
+}
+
+function loadLevel(n){
+  hideClimbGuide();
+  level=n;
+  paused=false;
+  levelCleared=false;
+  changingLevel=false;
+  coinCollected=false;
+  clearBanner.style.display='none';
+
+  resetMario();
+
+  levelLabel.textContent='LEVEL '+n;
+  bg.src='level'+n+'.png';
+  document.querySelectorAll('.cloud').forEach(c=>c.style.display='block');
+
+  ghost.style.display='none';
+  mushroom.style.display='none';
+  plantWindow1.style.display='none';
+  plantWindow2.style.display='none';
+  coin.style.display='block';
+
+  if(n===1){
+    ghost.style.display='block';
+    ghostX=255;
+    ghostDir=1;
+    ghost.style.left=ghostX+'px';
+    ghost.style.bottom=GROUND+'px';
+    ghost.style.transform='scaleX(-1)';
+
+    coin.style.left='565px';
+    coin.style.bottom='335px';
+  }
+
+  if(n===2){
+    /* LEVEL 2: start on the far-left brick platform */
+    x=25;
+    yBottom=391;
+    prevBottom=391;
+    vy=0;
+    jumping=false;
+    climbing=false;
+
+    mario.style.left=x+'px';
+    mario.style.bottom=yBottom+'px';
+
+    plantWindow1.style.display='none';
+    plantWindow2.style.display='none';
+
+    /* no moving clouds on Level 2 */
+    document.querySelectorAll('.cloud').forEach(c=>c.style.display='none');
+
+    /* coin on the far-right platform */
+    coin.style.left='875px';
+    coin.style.bottom='245px';
+
+    showLevel2ClimbGuide();
+  }
+
+  if(n===3){
+    mushroom.style.display='block';
+    mushroomX=405;
+    mushroomDir=1;
+    mushroom.style.left=mushroomX+'px';
+    mushroom.style.bottom=GROUND+'px';
+
+    positionCoinOnMushroom();
+  }
+}
+
+function hitbox(el){
+  const r=el.getBoundingClientRect();
+  const g=game.getBoundingClientRect();
+  return {
+    x:r.left-g.left,
+    y:r.top-g.top,
+    w:r.width,
+    h:r.height
+  };
+}
+
+function visibleHitbox(el,clip){
+  const a=el.getBoundingClientRect();
+  const c=clip.getBoundingClientRect();
+  const g=game.getBoundingClientRect();
+
+  const left=Math.max(a.left,c.left);
+  const right=Math.min(a.right,c.right);
+  const top=Math.max(a.top,c.top);
+  const bottom=Math.min(a.bottom,c.bottom);
+
+  return {
+    x:left-g.left,
+    y:top-g.top,
+    w:Math.max(0,right-left),
+    h:Math.max(0,bottom-top)
+  };
+}
+
+function overlap(a,b){
+  return (
+    a.w>0 && a.h>0 && b.w>0 && b.h>0 &&
+    a.x < b.x+b.w &&
+    a.x+a.w > b.x &&
+    a.y < b.y+b.h &&
+    a.y+a.h > b.y
+  );
+}
+
+function damage(){
+  if(invincible || paused || levelCleared) return;
+
+  hearts--;
+  setHearts();
+
+  invincible=true;
+  mario.style.opacity='.45';
+
+  setTimeout(()=>{
+    invincible=false;
+    mario.style.opacity='1';
+  },1000);
+
+  if(hearts<=0){
+    paused=true;
+    document.getElementById('gameOver').style.display='flex';
+  }else{
+    resetMario();
+  }
+}
+
+function collectCoin(){
+  if(coinCollected || levelCleared) return;
+
+  coinCollected=true;
+  coin.style.display='none';
+  openQuestion();
+}
+
+function openQuestion(){
+  paused=true;
+
+  const data=questions[level-1];
+  qText.innerHTML=data.q;
+  answers.innerHTML='';
+  feedback.textContent='';
+
+  data.choices.forEach((choice,i)=>{
+    const b=document.createElement('button');
+    b.innerHTML=choice;
+
+    b.onclick=()=>{
+      if(i===data.correct){
+        feedback.textContent='✅ CORRECT! COIN OBTAINED!';
+        feedback.style.color='green';
+
+        setTimeout(()=>{
+          question.style.display='none';
+
+          if(level<3){
+            paused=false;
+            levelCleared=true;
+            clearBanner.style.display='block';
+          }else{
+            paused=true;
+            document.getElementById('winScreen').style.display='flex';
+          }
+        },800);
+
+      }else{
+        feedback.textContent='❌ TRY AGAIN!';
+        feedback.style.color='red';
+      }
+    };
+
+    answers.appendChild(b);
+  });
+
+  question.style.display='block';
+}
+
+function transitionToLevel(nextLevel){
+  if(changingLevel) return;
+
+  changingLevel=true;
+  paused=true;
+  transition.style.opacity='1';
+
+  setTimeout(()=>{
+    loadLevel(nextLevel);
+    transition.style.opacity='0';
+  },480);
+}
+
+function positionCoinOnMushroom(){
+  coin.style.left=(mushroomX+20)+'px';
+  coin.style.bottom=(GROUND+118)+'px';
+}
+
+document.getElementById('startBtn').onclick=()=>{
+  document.getElementById('startScreen').style.display='none';
+  started=true;
+  loadLevel(1);
+  game.focus();
+};
+
+window.addEventListener('keydown',e=>{
+  if(!started || paused) return;
+
+  if(e.key==='ArrowLeft'){
+    left=true;
+    e.preventDefault();
+  }
+
+  if(e.key==='ArrowRight'){
+    right=true;
+    e.preventDefault();
+  }
+
+  if(e.key==='ArrowUp'){
+    up=true;
+    e.preventDefault();
+  }
+
+  if(e.key==='ArrowDown'){
+    down=true;
+    e.preventDefault();
+  }
+
+  if(e.code==='Space'){
+    if(level===2 && climbing){
+      /* jump/release from a vine */
+      climbing=false;
+      jumping=true;
+      vy=10.5;
+    }else if(!jumping && !climbing){
+      jumping=true;
+      standingOnRock=false;
+      vy = (level===2 ? 10.5 : 19);
+    }
+    e.preventDefault();
+  }
+});
+
+window.addEventListener('keyup',e=>{
+  if(e.key==='ArrowLeft') left=false;
+  if(e.key==='ArrowRight') right=false;
+  if(e.key==='ArrowUp') up=false;
+  if(e.key==='ArrowDown') down=false;
+});
+
+function updateMarioPhysics(){
+  /* LEVEL 2 has its own vine movement. */
+  if(level===2 && updateLevel2Physics()){
+    x=Math.max(0,Math.min(875,x));
+    return;
+  }
+
+  if(left) x-=5;
+  if(right) x+=5;
+  x=Math.max(0,Math.min(875,x));
+
+  const marioCenter=x+62;
+
+  if(level===1 && standingOnRock){
+    if(marioCenter<ROCK_X1 || marioCenter>ROCK_X2){
+      standingOnRock=false;
+      jumping=true;
+      vy=0;
+    }
+  }
+
+  prevBottom=yBottom;
+
+  /* Gravity. */
+  vy-=0.78;
+  yBottom+=vy;
+
+  /* Original Level 1 rock platform. */
+  if(
+    level===1 &&
+    vy<=0 &&
+    marioCenter>=ROCK_X1 &&
+    marioCenter<=ROCK_X2 &&
+    prevBottom>=ROCK_TOP_BOTTOM &&
+    yBottom<=ROCK_TOP_BOTTOM
+  ){
+    yBottom=ROCK_TOP_BOTTOM;
+    vy=0;
+    jumping=false;
+    standingOnRock=true;
+  }
+
+  if(level===2){
+    landOnLevel2Platforms();
+
+    /* Do NOT put Mario on a normal ground floor in Level 2.
+       The bottom is plants, so falling there costs a heart and restarts. */
+    level2PlantDeath();
+  }else if(!standingOnRock && yBottom<=GROUND){
+    yBottom=GROUND;
+    vy=0;
+    jumping=false;
+  }
+
+  mario.style.left=x+'px';
+  mario.style.bottom=yBottom+'px';
+}
+
+function updateGhost(){
+  ghostX+=ghostDir*2.3;
+
+  if(ghostX>760) ghostDir=-1;
+  if(ghostX<250) ghostDir=1;
+
+  ghost.style.transform=ghostDir===1 ? 'scaleX(-1)' : 'scaleX(1)';
+  ghost.style.left=ghostX+'px';
+
+  if(!levelCleared && overlap(hitbox(mario),hitbox(ghost))){
+    damage();
+  }
+}
+
+/* TWO BIG PLANTS THAT RISE STRAIGHT OUT OF THE PIPE OPENINGS */
+function updatePlants(now){
+
+  function plantRise(timeOffset){
+    const t=((now+timeOffset)%2000)/1000;
+
+    /*
+      0.00 - 0.35 : rising
+      0.35 - 1.00 : fully out
+      1.00 - 1.35 : going back down
+      1.35 - 2.00 : completely hidden inside pipe
+    */
+    if(t < 0.35) return t/0.35;
+    if(t < 1.00) return 1;
+    if(t < 1.35) return 1-(t-1.00)/0.35;
+    return 0;
+  }
+
+  /* second pipe is offset so they alternate */
+  const rise1=plantRise(0);
+  const rise2=plantRise(1000);
+
+  /*
+    Plant starts at bottom:-270px.
+    Moving it UP by 270px places its base exactly at the pipe opening,
+    so it looks like it is coming OUT of the pipe instead of floating on it.
+  */
+  const travel=-270;
+
+  plant1.style.transform=`translateY(${travel*rise1}px)`;
+  plant2.style.transform=`translateY(${travel*rise2}px)`;
+
+  if(!levelCleared){
+    if(rise1>0.50 && overlap(hitbox(mario),visibleHitbox(plant1,plantWindow1))){
+      damage();
+    }
+
+    if(rise2>0.50 && overlap(hitbox(mario),visibleHitbox(plant2,plantWindow2))){
+      damage();
+    }
+  }
+}
+
+
+/* ===== LEVEL 2 VINE COURSE — ALIGNED TO THE CURRENT level2.png =====
+   The background is scaled into the 1000 x 560 game window.
+   These coordinates match the 3 hanging vines + left/right brick platforms.
+*/
+
+const L2_VINES=[
+  /* left vine */
+  {x1:205, x2:285, minBottom:350, maxBottom:535, snapX:220},
+
+  /* middle vine */
+  {x1:345, x2:460, minBottom:285, maxBottom:535, snapX:375},
+
+  /* right vine */
+  {x1:515, x2:610, minBottom:345, maxBottom:535, snapX:535}
+];
+
+/* top surface of the two brick platforms, measured from game bottom */
+const L2_LEFT_PLATFORM={
+  x1:0,
+  x2:195,
+  bottom:391
+};
+
+const L2_RIGHT_PLATFORM={
+  x1:805,
+  x2:1000,
+  bottom:234
+};
+
+/* top of the plant hazard row */
+const L2_PLANT_DANGER_BOTTOM=132;
+
+function closestVine(){
+  const marioCenter=x+62;
+
+  let best=null;
+  let bestDistance=9999;
+
+  for(const vine of L2_VINES){
+    const center=(vine.x1+vine.x2)/2;
+    const distance=Math.abs(marioCenter-center);
+
+    /*
+      Generous grab range so you don't need pixel-perfect positioning.
+      Press ↑ when Mario is close to a vine.
+    */
+    if(distance<80 && distance<bestDistance){
+      best=vine;
+      bestDistance=distance;
+    }
+  }
+
+  return best;
+}
+
+function currentlyOverVine(){
+  const marioCenter=x+62;
+
+  return L2_VINES.find(v =>
+    marioCenter >= v.x1-25 &&
+    marioCenter <= v.x2+25 &&
+    yBottom >= v.minBottom-110 &&
+    yBottom <= v.maxBottom
+  );
+}
+
+function updateLevel2Physics(){
+
+  /*
+    GRAB:
+    Press ↑ near a vine and Mario snaps onto it.
+    This fixes the old problem where Mario had to already overlap
+    a tiny invisible collision area before climbing would work.
+  */
+  if(!climbing && up){
+    const vine=closestVine();
+
+    if(vine){
+      climbing=true;
+      jumping=false;
+      vy=0;
+
+      x=vine.snapX;
+
+      /* keep Mario inside that vine's usable vertical range */
+      yBottom=Math.max(vine.minBottom-80, Math.min(vine.maxBottom-80, yBottom));
+
+      mario.style.left=x+'px';
+      mario.style.bottom=yBottom+'px';
+      return true;
+    }
+  }
+
+  if(climbing){
+    const vine=currentlyOverVine();
+
+    /* If Mario leaves the vine horizontally, he falls/jumps normally. */
+    if(!vine){
+      climbing=false;
+      jumping=true;
+      vy=0;
+      return false;
+    }
+
+    vy=0;
+    jumping=false;
+
+    /* climb */
+    if(up) yBottom+=4.2;
+    if(down) yBottom-=4.2;
+
+    /* small side movement while hanging */
+    if(left) x-=2.2;
+    if(right) x+=2.2;
+
+    yBottom=Math.max(vine.minBottom-80, Math.min(vine.maxBottom-80,yBottom));
+    x=Math.max(0,Math.min(875,x));
+
+    mario.style.left=x+'px';
+    mario.style.bottom=yBottom+'px';
+
+    return true;
+  }
+
+  return false;
+}
+
+function landOnLevel2Platforms(){
+  const cx=x+62;
+
+  /* left starting platform */
+  if(
+    vy<=0 &&
+    cx>=L2_LEFT_PLATFORM.x1 &&
+    cx<=L2_LEFT_PLATFORM.x2 &&
+    prevBottom>=L2_LEFT_PLATFORM.bottom &&
+    yBottom<=L2_LEFT_PLATFORM.bottom
+  ){
+    yBottom=L2_LEFT_PLATFORM.bottom;
+    vy=0;
+    jumping=false;
+    return true;
+  }
+
+  /* far-right coin platform */
+  if(
+    vy<=0 &&
+    cx>=L2_RIGHT_PLATFORM.x1 &&
+    cx<=L2_RIGHT_PLATFORM.x2 &&
+    prevBottom>=L2_RIGHT_PLATFORM.bottom &&
+    yBottom<=L2_RIGHT_PLATFORM.bottom
+  ){
+    yBottom=L2_RIGHT_PLATFORM.bottom;
+    vy=0;
+    jumping=false;
+    return true;
+  }
+
+  return false;
+}
+
+function level2PlantDeath(){
+
+  if(level!==2 || paused || levelCleared || invincible) return;
+
+  /*
+    If Mario falls onto the giant plant row:
+    - lose 1 heart
+    - restart Level 2
+    - keep remaining hearts
+  */
+  if(yBottom<=L2_PLANT_DANGER_BOTTOM){
+
+    hearts--;
+    setHearts();
+
+    if(hearts<=0){
+      paused=true;
+      document.getElementById('gameOver').style.display='flex';
+      return;
+    }
+
+    invincible=true;
+
+    loadLevel(2);
+
+    mario.style.opacity='.45';
+
+    setTimeout(()=>{
+      invincible=false;
+      mario.style.opacity='1';
+    },700);
+  }
+}
+
+function updateMushroom(){
+  mushroomX+=mushroomDir*1.8;
+
+  if(mushroomX>690) mushroomDir=-1;
+  if(mushroomX<300) mushroomDir=1;
+
+  mushroom.style.left=mushroomX+'px';
+  positionCoinOnMushroom();
+
+  if(levelCleared) return;
+
+  const m=hitbox(mario);
+  const sh=hitbox(mushroom);
+
+  if(overlap(m,sh)){
+    const marioFeet=m.y+m.h;
+    const stomp=vy<0 && marioFeet<=sh.y+42;
+
+    if(stomp){
+      collectCoin();
+      vy=11;
+      jumping=true;
+      standingOnRock=false;
+    }else{
+      damage();
+    }
+  }
+}
+
+function updateCoinCollision(){
+  if(levelCleared || coinCollected) return;
+  if(level===3) return;
+
+  if(overlap(hitbox(mario),hitbox(coin))){
+    collectCoin();
+  }
+}
+
+function gameLoop(now){
+  if(started && !paused){
+
+    updateMarioPhysics();
+
+    if(level===1) updateGhost();
+    /* Level 2 hazards are the plants baked into level2.png. */
+    if(level===3) updateMushroom();
+
+    updateCoinCollision();
+
+    if(levelCleared && x>=865 && level<3){
+      transitionToLevel(level+1);
+    }
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+setHearts();
+requestAnimationFrame(gameLoop);
+</script>
+
+
+<div id="climbGuide">
+  <div class="guideTitle">🌿 HOW TO CLIMB</div>
+  Move next to a vine + press <b>↑</b> to grab<br>
+  <b>↑ / ↓</b> climb &nbsp; • &nbsp; <b>SPACE</b> jump off
+</div>
+
+</body>
+</html>
